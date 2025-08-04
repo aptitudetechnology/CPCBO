@@ -1,0 +1,5 @@
+# Default configuration for biological hypercomputing platform
+simulation:
+  time_step: 0.01
+  max_iterations: 10000
+  random_seed: 42

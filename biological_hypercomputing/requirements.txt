@@ -1,0 +1,17 @@
+numpy
+scipy
+matplotlib
+seaborn
+pandas
+networkx
+scikit-learn
+tensorflow
+torch
+biopython
+pyyaml
+jupyter
+plotly
+dash
+pytest
+black
+mypy
