@@ -727,4 +727,184 @@ Demonstration of quantum-biological interfaces using Weyltronics.
 
 import numpy as np
 import matplotlib.pyplot as plt
-from src
+from src.biocomputing.weyltronics.interfaces.quantum_bio_bridge import WeylBioCoupler, BioQuantumSignal
+from src.biocomputing.weyltronics.chiral.anomaly_effects import ChiralAnomalyProcessor
+from src.biocomputing.weyltronics.synergy_integrations import WeyltonicSynergyManager
+
+def simulate_membrane_potential():
+    """Simulate biological membrane potential over time."""
+    t = np.linspace(0, 0.1, 1000)  # 100ms simulation
+    # Action potential-like signal
+    membrane_potential = -70 + 120 * np.exp(-((t - 0.05) / 0.01)**2)
+    return t, membrane_potential
+
+def main():
+    """Run quantum-bio interface demonstration."""
+    
+    # Initialize quantum-bio coupler
+    coupler = WeylBioCoupler(coupling_efficiency=0.85)
+    
+    # Simulate biological signals
+    time, membrane_v = simulate_membrane_potential()
+    
+    # Convert biological signals to quantum domain
+    quantum_signals = []
+    biological_responses = []
+    
+    for v in membrane_v:
+        # Bio to quantum conversion
+        bio_signal = {'membrane_potential': v}
+        quantum_sig = coupler.biological_to_quantum(bio_signal)
+        quantum_signals.append(quantum_sig.amplitude)
+        
+        # Create mock quantum state
+        quantum_state = np.array([quantum_sig.amplitude * np.exp(1j * quantum_sig.phase)])
+        
+        # Quantum to bio conversion
+        bio_response = coupler.quantum_to_biological(quantum_state)
+        biological_responses.append(bio_response)
+    
+    # Demonstrate chiral anomaly processing
+    anomaly_processor = ChiralAnomalyProcessor(None)  # Mock weyl system
+    
+    # Test chiral computation
+    input_data = np.random.randn(64)
+    field_config = {
+        'electric': np.array([1, 0, 0]),
+        'magnetic': np.array([1, 0, 0])  # Parallel fields for anomaly
+    }
+    
+    processed_data = anomaly_processor.chiral_computation(input_data, field_config)
+    
+    # Synergy integration demonstration
+    synergy_manager = WeyltonicSynergyManager()
+    
+    # Mock systems for integration
+    class MockSystem:
+        def get_edge_currents(self):
+            return {'top': 1.0, 'bottom': -1.0, 'left': 0.5, 'right': -0.5}
+    
+    mock_weyl = MockSystem()
+    mock_noise = None
+    mock_cellular = None
+    mock_genetic = None
+    mock_metabolic = None
+    
+    # Integrate with different phenomena
+    noise_synergy = synergy_manager.integrate_with_noise(mock_weyl, mock_noise)
+    network_synergy = synergy_manager.integrate_with_cellular_networks(mock_weyl, mock_cellular)
+    genetic_synergy = synergy_manager.integrate_with_genetic_circuits(mock_weyl, mock_genetic)
+    metabolic_synergy = synergy_manager.integrate_with_metabolism(mock_weyl, mock_metabolic)
+    
+    combined_capabilities = synergy_manager.get_combined_capabilities()
+    
+    # Create comprehensive visualization
+    fig, axes = plt.subplots(2, 3, figsize=(18, 12))
+    
+    # Plot 1: Membrane potential and quantum coupling
+    axes[0, 0].plot(time * 1000, membrane_v, 'b-', linewidth=2, label='Membrane Potential')
+    axes[0, 0].set_xlabel('Time (ms)')
+    axes[0, 0].set_ylabel('Potential (mV)')
+    axes[0, 0].set_title('Biological Signal Input')
+    axes[0, 0].grid(True)
+    axes[0, 0].legend()
+    
+    # Plot 2: Quantum signal amplitude
+    axes[0, 1].plot(time * 1000, quantum_signals, 'r-', linewidth=2)
+    axes[0, 1].set_xlabel('Time (ms)')
+    axes[0, 1].set_ylabel('Quantum Amplitude')
+    axes[0, 1].set_title('Bio→Quantum Conversion')
+    axes[0, 1].grid(True)
+    
+    # Plot 3: Biological response (ion conductance)
+    ion_conductances = [resp['ion_conductance'] for resp in biological_responses]
+    axes[0, 2].plot(time * 1000, ion_conductances, 'g-', linewidth=2)
+    axes[0, 2].set_xlabel('Time (ms)')
+    axes[0, 2].set_ylabel('Ion Conductance')
+    axes[0, 2].set_title('Quantum→Bio Response')
+    axes[0, 2].grid(True)
+    
+    # Plot 4: Chiral anomaly processing
+    axes[1, 0].plot(input_data[:32], 'b-', alpha=0.7, label='Input')
+    axes[1, 0].plot(processed_data[:32], 'r-', alpha=0.7, label='Processed')
+    axes[1, 0].set_xlabel('Sample')
+    axes[1, 0].set_ylabel('Amplitude')
+    axes[1, 0].set_title('Chiral Anomaly Processing')
+    axes[1, 0].legend()
+    axes[1, 0].grid(True)
+    
+    # Plot 5: Synergy integration metrics
+    synergy_names = ['Noise', 'Networks', 'Genetic', 'Metabolic']
+    resilience_values = [
+        noise_synergy['noise_resilience'],
+        network_synergy['fault_tolerance'], 
+        genetic_synergy['evolution_rate'] * 10,  # Scale for visibility
+        metabolic_synergy['energy_efficiency']
+    ]
+    
+    bars = axes[1, 1].bar(synergy_names, resilience_values, 
+                         color=['blue', 'green', 'orange', 'purple'], alpha=0.7)
+    axes[1, 1].set_ylabel('Performance Metric')
+    axes[1, 1].set_title('Synergistic Integration Benefits')
+    axes[1, 1].set_ylim(0, 1)
+    
+    # Add value labels on bars
+    for bar, value in zip(bars, resilience_values):
+        height = bar.get_height()
+        axes[1, 1].text(bar.get_x() + bar.get_width()/2., height + 0.01,
+                        f'{value:.3f}', ha='center', va='bottom')
+    
+    # Plot 6: Combined capability radar chart (simplified)
+    capabilities = list(combined_capabilities.keys())[:6]  # First 6 boolean capabilities
+    capability_values = [1.0 if combined_capabilities[cap] else 0.0 for cap in capabilities]
+    
+    # Simple bar chart instead of radar for simplicity
+    axes[1, 2].barh(range(len(capabilities)), capability_values, color='cyan', alpha=0.7)
+    axes[1, 2].set_yticks(range(len(capabilities)))
+    axes[1, 2].set_yticklabels([cap.replace('_', ' ').title() for cap in capabilities], fontsize=8)
+    axes[1, 2].set_xlabel('Capability Level')
+    axes[1, 2].set_title('Combined System Capabilities')
+    axes[1, 2].set_xlim(0, 1.2)
+    
+    plt.tight_layout()
+    plt.savefig('examples/weyltronics/quantum_bio_interface_demo.png', dpi=150, bbox_inches='tight')
+    plt.show()
+    
+    # Print detailed results
+    print("=== Quantum-Biological Interface Demonstration ===")
+    print(f"Coupling efficiency: {coupler.coupling_strength():.2f}")
+    print(f"Peak membrane potential: {max(membrane_v):.1f} mV")
+    print(f"Peak quantum amplitude: {max(quantum_signals):.3f}")
+    print(f"Peak ion conductance response: {max(ion_conductances):.3f}")
+    
+    print("\n=== Chiral Anomaly Processing ===")
+    print(f"Input data RMS: {np.sqrt(np.mean(input_data**2)):.3f}")
+    print(f"Processed data RMS: {np.sqrt(np.mean(processed_data**2)):.3f}")
+    print(f"Processing gain: {np.sqrt(np.mean(processed_data**2)) / np.sqrt(np.mean(input_data**2)):.2f}")
+    
+    print("\n=== Synergistic Integration Results ===")
+    for synergy_type, synergy_data in [
+        ('Noise Integration', noise_synergy),
+        ('Network Integration', network_synergy), 
+        ('Genetic Integration', genetic_synergy),
+        ('Metabolic Integration', metabolic_synergy)
+    ]:
+        print(f"\n{synergy_type}:")
+        for key, value in synergy_data.items():
+            if isinstance(value, float):
+                print(f"  {key}: {value:.3f}")
+            elif isinstance(value, bool):
+                print(f"  {key}: {value}")
+            elif isinstance(value, int):
+                print(f"  {key}: {value}")
+    
+    print("\n=== Combined System Capabilities ===")
+    for capability, status in combined_capabilities.items():
+        if isinstance(status, bool):
+            print(f"  {capability.replace('_', ' ').title()}: {'✓' if status else '✗'}")
+        else:
+            print(f"  {capability.replace('_', ' ').title()}: {status}")
+
+if __name__ == "__main__":
+    main()
+EOF
