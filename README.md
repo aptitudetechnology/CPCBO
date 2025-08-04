@@ -399,7 +399,7 @@ This research builds upon decades of work in:
 
 ## 🌀 Weyltronics: Topological Quantum-Bio Computing
 
-The **Weyltronics** module introduces simulation and integration capabilities for theoretical hardware based on Weyl semimetals and topological materials. These materials exhibit exotic quantum properties, such as robust, dissipationless edge states and chiral anomaly effects, which are promising for quantum-enhanced, noise-resilient, and biologically integrated computing.
+The **Weyltronics** module introduces simulation and integration capabilities for theoretical hardware based on Weyl semimetals and topological materials. These materials exhibit exotic quantum properties, such as robust, dissipationless edge states and chiral anomaly effects, which are promising for quantum-enhanced, noise-resilient, stochastic (noise-driven), and biologically integrated computing.
 
 ### Key Features
 - **Core Simulation**: Classes for Weyl semimetal systems, topological protection, and chiral anomaly effects.
