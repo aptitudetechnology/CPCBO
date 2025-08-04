@@ -1,0 +1,5 @@
+"""Evolutionary_adaptation phenomenon implementation."""
+
+from .evolutionary_adaptation_core import EvolutionaryAdaptationCore
+from .evolutionary_adaptation_simulator import EvolutionaryAdaptationSimulator
+from .evolutionary_adaptation_optimizer import EvolutionaryAdaptationOptimizer
