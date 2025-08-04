@@ -90,4 +90,15 @@ class TestSynergisticCombinations(unittest.TestCase):
         
         tasks = [
             {'id': 'task1', 'resources': {'energy': 30}},
-            {'id': 'task2
+            {'id': 'task2', 'resources': {'energy': 25}}
+        ]
+        
+        demonstration = balancer.demonstrate_energy_efficiency(tasks)
+        
+        self.assertIn('total_energy_required', demonstration)
+        self.assertIn('coordination_efficiency', demonstration)
+        self.assertIn('resource_conflicts_prevented', demonstration)
+        self.assertIn('schedule', demonstration)
+
+if __name__ == '__main__':
+    unittest.main()
