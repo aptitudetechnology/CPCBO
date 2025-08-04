@@ -1,0 +1,5 @@
+"""Multiscale_processes phenomenon implementation."""
+
+from .multiscale_processes_core import MultiscaleProcessesCore
+from .multiscale_processes_simulator import MultiscaleProcessesSimulator
+from .multiscale_processes_optimizer import MultiscaleProcessesOptimizer

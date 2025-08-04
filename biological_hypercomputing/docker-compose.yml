@@ -1,0 +1,64 @@
+version: '3.8'
+
+services:
+  biocomputing-main:
+    build: .
+    ports:
+      - "8050:8050"
+    volumes:
+      - ./data:/app/data
+      - ./results:/app/results
+      - ./logs:/app/logs
+    environment:
+      - PYTHONPATH=/app/src
+      - EXPERIMENT_TYPE=full
+    command: python src/main.py --experiment full --environment production
+
+  molecular-simulator:
+    build: .
+    volumes:
+      - ./data:/app/data
+      - ./results:/app/results
+    environment:
+      - PYTHONPATH=/app/src
+    command: python simulations/molecular/molecular_simulator.py
+    depends_on:
+      - biocomputing-main
+
+  cellular-simulator:
+    build: .
+    volumes:
+      - ./data:/app/data
+      - ./results:/app/results
+    environment:
+      - PYTHONPATH=/app/src
+    command: python simulations/cellular/cellular_simulator.py
+    depends_on:
+      - biocomputing-main
+
+  population-simulator:
+    build: .
+    volumes:
+      - ./data:/app/data
+      - ./results:/app/results
+    environment:
+      - PYTHONPATH=/app/src
+    command: python simulations/population/population_simulator.py
+    depends_on:
+      - biocomputing-main
+
+  jupyter-lab:
+    build: .
+    ports:
+      - "8888:8888"
+    volumes:
+      - ./:/app
+      - ./data:/app/data
+      - ./results:/app/results
+    environment:
+      - PYTHONPATH=/app/src
+    command: jupyter lab --ip=0.0.0.0 --port=8888 --no-browser --allow-root --NotebookApp.token='' --NotebookApp.password=''
+
+volumes:
+  biocomputing-data:
+  biocomputing-results:

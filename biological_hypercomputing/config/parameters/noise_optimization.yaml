@@ -1,0 +1,30 @@
+# Parameters for noise-enhanced optimization
+
+molecular_noise:
+  optimization_noise:
+    amplitude_range: [0.01, 0.5]
+    frequency_range: [0.1, 10.0]
+    correlation_time_range: [0.1, 5.0]
+    
+  beneficial_noise_detection:
+    performance_threshold: 0.05  # 5% improvement required
+    stability_window: 100  # Steps to check for stability
+    adaptation_rate: 0.01
+    
+  noise_scheduling:
+    initial_amplitude: 0.1
+    decay_rate: 0.99
+    minimum_amplitude: 0.001
+    adaptive_scaling: true
+
+stochastic_optimization:
+  exploration_exploitation_balance: 0.7  # 70% exploration, 30% exploitation
+  noise_guided_search: true
+  multi_scale_noise: true
+  constructive_interference: true
+  
+search_parameters:
+  population_diversity_maintenance: true
+  noise_induced_mutations: true
+  beneficial_noise_amplification: true
+  destructive_noise_suppression: true
