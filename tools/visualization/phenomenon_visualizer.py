@@ -196,4 +196,26 @@ class PhenomenonVisualizer:
         plt.subplot(2, 3, 6)
         plt.scatter(diversity, max_fitness, alpha=0.6, c=generations, cmap='viridis')
         plt.xlabel('Genetic Diversity')
-        plt.ylabel('
+        plt.ylabel('Maximum Fitness')
+        plt.title('Diversity vs Fitness')
+        plt.colorbar(label='Generation')
+        
+        plt.tight_layout()
+        
+        if save_path:
+            plt.savefig(save_path, dpi=300, bbox_inches='tight')
+        plt.show()
+
+if __name__ == "__main__":
+    # Example usage
+    visualizer = PhenomenonVisualizer()
+    
+    # Example synergy data
+    synergies = {
+        'cellular_molecular': 0.8,
+        'genetic_swarm': 0.6,
+        'quantum_noise': 0.9,
+        'metabolism_multiscale': 0.7
+    }
+    
+    visualizer.plot_synergy_matrix(synergies)
