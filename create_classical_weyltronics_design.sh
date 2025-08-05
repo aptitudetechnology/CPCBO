@@ -271,7 +271,748 @@ class ClassicalWeylDesignSuite:
         self.simulators = {}
         self.design_database = {}
         
-    def create_design_configuration(self, config_name: str, 
+    def create_design_optimization_example():
+    """Create example optimization setup for Weyltronic design."""
+    optimizer = ClassicalDesignOptimizer()
+    
+    # Add design variables
+    optimizer.add_variable(DesignVariable(
+        name='lattice_constant',
+        lower_bound=0.5,
+        upper_bound=2.0,
+        initial_value=1.0,
+        units='Å'
+    ))
+    
+    optimizer.add_variable(DesignVariable(
+        name='hopping_strength',
+        lower_bound=0.1,
+        upper_bound=5.0,
+        initial_value=2.0,
+        units='eV'
+    ))
+    
+    optimizer.add_variable(DesignVariable(
+        name='weyl_separation',
+        lower_bound=0.01,
+        upper_bound=0.5,
+        initial_value=0.1,
+        units='1/Å'
+    ))
+    
+    # Add design objectives
+    optimizer.add_objective(DesignObjective(
+        name='conductance',
+        target_value=2.0,  # Target 2 e^2/h
+        weight=1.0,
+        tolerance=0.1,
+        constraint_type='equality'
+    ))
+    
+    optimizer.add_objective(DesignObjective(
+        name='chern_number',
+        target_value=1.0,  # Target Chern number = 1
+        weight=2.0,
+        tolerance=0.0,
+        constraint_type='equality'
+    ))
+    
+    return optimizer
+EOF
+
+# Create CAD tools for Weyltronic design
+cat > src/biocomputing/weyltronics/classical_design/cad_tools/weyl_cad.py << 'EOF'
+"""
+Computer-Aided Design (CAD) tools for Weyltronic systems.
+
+Provides classical CAD functionality for designing, visualizing, and
+analyzing Weyltronic device geometries and architectures.
+"""
+
+import numpy as np
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
+import matplotlib.patches as patches
+from typing import Dict, List, Tuple, Optional
+from dataclasses import dataclass
+import json
+
+@dataclass
+class DeviceLayer:
+    """Represents a layer in Weyltronic device stack."""
+    name: str
+    material: str
+    thickness: float  # nm
+    position_z: float  # nm
+    properties: Dict[str, float]
+
+@dataclass
+class ContactPad:
+    """Electrical contact pad definition."""
+    name: str
+    position: Tuple[float, float]  # (x, y) in μm
+    size: Tuple[float, float]      # (width, height) in μm
+    material: str = "Au"
+
+@dataclass
+class DeviceGeometry:
+    """Complete device geometry specification."""
+    name: str
+    total_size: Tuple[float, float, float]  # (x, y, z) in μm
+    layers: List[DeviceLayer]
+    contacts: List[ContactPad]
+    active_region: Dict[str, float]
+
+class WeyltronicCAD:
+    """
+    Computer-Aided Design system for Weyltronic devices.
+    
+    Provides tools for device layout, geometry optimization,
+    and fabrication-ready design generation.
+    """
+    
+    def __init__(self):
+        self.devices = {}
+        self.material_library = self._initialize_material_library()
+        self.design_rules = self._initialize_design_rules()
+        
+    def _initialize_material_library(self) -> Dict[str, Dict[str, float]]:
+        """Initialize material properties library."""
+        return {
+            'TaAs': {
+                'resistivity': 1e-6,  # Ω⋅m
+                'thermal_conductivity': 50.0,  # W/m⋅K
+                'lattice_constant': 0.34,  # nm
+                'weyl_velocity': 5e5,  # m/s
+                'processing_temp': 800.0  # K
+            },
+            'NbAs': {
+                'resistivity': 2e-6,
+                'thermal_conductivity': 45.0,
+                'lattice_constant': 0.35,
+                'weyl_velocity': 4e5,
+                'processing_temp': 750.0
+            },
+            'SiO2': {
+                'resistivity': 1e12,
+                'thermal_conductivity': 1.4,
+                'lattice_constant': 0.0,  # Amorphous
+                'weyl_velocity': 0.0,
+                'processing_temp': 1200.0
+            },
+            'Au': {
+                'resistivity': 2.2e-8,
+                'thermal_conductivity': 315.0,
+                'lattice_constant': 0.408,
+                'weyl_velocity': 0.0,
+                'processing_temp': 400.0
+            }
+        }
+    
+    def _initialize_design_rules(self) -> Dict[str, float]:
+        """Initialize fabrication design rules."""
+        return {
+            'min_feature_size': 0.1,     # μm
+            'min_layer_thickness': 0.01,  # μm
+            'min_contact_size': 1.0,      # μm
+            'min_contact_spacing': 0.5,   # μm
+            'max_aspect_ratio': 10.0,     # dimensionless
+            'thermal_budget': 1000.0      # K
+        }
+    
+    def create_device_template(self, device_name: str, device_type: str = 'hall_bar') -> DeviceGeometry:
+        """Create device geometry template."""
+        if device_type == 'hall_bar':
+            return self._create_hall_bar_template(device_name)
+        elif device_type == 'field_effect':
+            return self._create_fet_template(device_name)
+        elif device_type == 'quantum_well':
+            return self._create_quantum_well_template(device_name)
+        else:
+            raise ValueError(f"Unknown device type: {device_type}")
+    
+    def _create_hall_bar_template(self, device_name: str) -> DeviceGeometry:
+        """Create Hall bar device template."""
+        # Define layers
+        layers = [
+            DeviceLayer(
+                name='substrate',
+                material='SiO2',
+                thickness=500.0,  # nm
+                position_z=0.0,
+                properties={'doping': 0.0}
+            ),
+            DeviceLayer(
+                name='weyl_channel',
+                material='TaAs',
+                thickness=50.0,   # nm
+                position_z=500.0,
+                properties={'carrier_density': 1e18}  # cm^-3
+            ),
+            DeviceLayer(
+                name='top_gate',
+                material='Au',
+                thickness=100.0,  # nm
+                position_z=550.0,
+                properties={'work_function': 5.1}  # eV
+            )
+        ]
+        
+        # Define contacts
+        contacts = [
+            ContactPad('source', (0.0, 10.0), (2.0, 2.0)),
+            ContactPad('drain', (20.0, 10.0), (2.0, 2.0)),
+            ContactPad('hall_1', (10.0, 2.0), (1.0, 1.0)),
+            ContactPad('hall_2', (10.0, 18.0), (1.0, 1.0)),
+            ContactPad('gate', (10.0, 10.0), (8.0, 8.0))
+        ]
+        
+        return DeviceGeometry(
+            name=device_name,
+            total_size=(25.0, 25.0, 0.65),  # μm
+            layers=layers,
+            contacts=contacts,
+            active_region={'x': 10.0, 'y': 10.0, 'width': 10.0, 'height': 6.0}
+        )
+    
+    def _create_fet_template(self, device_name: str) -> DeviceGeometry:
+        """Create field-effect transistor template."""
+        layers = [
+            DeviceLayer('substrate', 'SiO2', 300.0, 0.0, {}),
+            DeviceLayer('channel', 'TaAs', 20.0, 300.0, {'mobility': 1000.0}),
+            DeviceLayer('gate_oxide', 'SiO2', 10.0, 320.0, {}),
+            DeviceLayer('gate', 'Au', 50.0, 330.0, {})
+        ]
+        
+        contacts = [
+            ContactPad('source', (2.0, 5.0), (3.0, 2.0)),
+            ContactPad('drain', (15.0, 5.0), (3.0, 2.0)),
+            ContactPad('gate', (8.0, 8.0), (6.0, 1.0))
+        ]
+        
+        return DeviceGeometry(
+            name=device_name,
+            total_size=(20.0, 10.0, 0.38),
+            layers=layers,
+            contacts=contacts,
+            active_region={'x': 5.0, 'y': 4.0, 'width': 10.0, 'height': 2.0}
+        )
+    
+    def optimize_device_geometry(self, device: DeviceGeometry, 
+                                target_specs: Dict[str, float]) -> DeviceGeometry:
+        """Optimize device geometry for target specifications."""
+        print(f"Optimizing geometry for device: {device.name}")
+        
+        optimized_device = device  # Start with original
+        
+        # Simple optimization rules
+        if 'resistance' in target_specs:
+            target_resistance = target_specs['resistance']
+            # Adjust channel dimensions
+            for layer in optimized_device.layers:
+                if 'channel' in layer.name.lower():
+                    # R = ρL/A, so adjust thickness for target resistance
+                    material_props = self.material_library.get(layer.material, {})
+                    resistivity = material_props.get('resistivity', 1e-6)
+                    
+                    # Simple resistance calculation
+                    length = optimized_device.active_region['width']
+                    width = optimized_device.active_region['height']
+                    current_resistance = resistivity * length / (width * layer.thickness * 1e-9)
+                    
+                    if current_resistance > 0:
+                        scaling_factor = current_resistance / target_resistance
+                        layer.thickness *= scaling_factor
+                        layer.thickness = max(layer.thickness, self.design_rules['min_layer_thickness'] * 1000)
+        
+        if 'capacitance' in target_specs:
+            # Adjust gate oxide thickness for capacitance
+            target_capacitance = target_specs['capacitance']
+            for layer in optimized_device.layers:
+                if 'oxide' in layer.name.lower():
+                    # C = ε₀εᵣA/t
+                    epsilon_r = 3.9  # SiO2
+                    epsilon_0 = 8.854e-12  # F/m
+                    area = (optimized_device.active_region['width'] * 
+                           optimized_device.active_region['height'] * 1e-12)  # m²
+                    
+                    optimal_thickness = epsilon_0 * epsilon_r * area / target_capacitance
+                    layer.thickness = max(optimal_thickness * 1e9, 5.0)  # Convert to nm, min 5nm
+        
+        return optimized_device
+    
+    def validate_design_rules(self, device: DeviceGeometry) -> Dict[str, bool]:
+        """Validate device against design rules."""
+        validation_results = {}
+        
+        # Check minimum feature sizes
+        min_contact_size = min(
+            min(contact.size) for contact in device.contacts
+        )
+        validation_results['min_contact_size'] = min_contact_size >= self.design_rules['min_contact_size']
+        
+        # Check layer thicknesses
+        min_layer_thickness = min(layer.thickness for layer in device.layers) / 1000  # Convert to μm
+        validation_results['min_layer_thickness'] = min_layer_thickness >= self.design_rules['min_layer_thickness']
+        
+        # Check aspect ratios
+        max_aspect_ratio = 0
+        for layer in device.layers:
+            if layer.thickness > 0:
+                lateral_size = max(device.total_size[0], device.total_size[1])
+                aspect_ratio = lateral_size / (layer.thickness / 1000)  # Convert to μm
+                max_aspect_ratio = max(max_aspect_ratio, aspect_ratio)
+        
+        validation_results['max_aspect_ratio'] = max_aspect_ratio <= self.design_rules['max_aspect_ratio']
+        
+        # Check thermal budget
+        max_processing_temp = 0
+        for layer in device.layers:
+            material_props = self.material_library.get(layer.material, {})
+            processing_temp = material_props.get('processing_temp', 300.0)
+            max_processing_temp = max(max_processing_temp, processing_temp)
+        
+        validation_results['thermal_budget'] = max_processing_temp <= self.design_rules['thermal_budget']
+        
+        return validation_results
+    
+    def generate_fabrication_recipe(self, device: DeviceGeometry) -> List[Dict[str, any]]:
+        """Generate step-by-step fabrication recipe."""
+        recipe = []
+        
+        # Sort layers by z-position for proper processing order
+        sorted_layers = sorted(device.layers, key=lambda l: l.position_z)
+        
+        for i, layer in enumerate(sorted_layers):
+            material_props = self.material_library.get(layer.material, {})
+            
+            if i == 0:  # Substrate preparation
+                recipe.append({
+                    'step': f'Substrate preparation',
+                    'process': 'cleaning',
+                    'material': layer.material,
+                    'parameters': {
+                        'temperature': 400.0,  # K
+                        'duration': 600.0,     # seconds
+                        'atmosphere': 'vacuum'
+                    }
+                })
+            else:
+                # Deposition step
+                recipe.append({
+                    'step': f'Deposit {layer.name}',
+                    'process': 'deposition',
+                    'material': layer.material,
+                    'parameters': {
+                        'thickness': layer.thickness,  # nm
+                        'temperature': material_props.get('processing_temp', 500.0),
+                        'rate': 0.1,  # nm/s
+                        'pressure': 1e-8  # Torr
+                    }
+                })
+                
+                # Patterning step if needed
+                if 'gate' in layer.name or 'contact' in layer.name:
+                    recipe.append({
+                        'step': f'Pattern {layer.name}',
+                        'process': 'lithography',
+                        'material': 'photoresist',
+                        'parameters': {
+                            'exposure_dose': 100.0,  # mJ/cm²
+                            'development_time': 60.0,  # seconds
+                            'feature_size': self.design_rules['min_feature_size']
+                        }
+                    })
+        
+        # Contact formation
+        recipe.append({
+            'step': 'Contact formation',
+            'process': 'metallization',
+            'material': 'Au',
+            'parameters': {
+                'thickness': 100.0,  # nm
+                'temperature': 400.0,  # K
+                'annealing_temp': 500.0,  # K
+                'annealing_time': 300.0   # seconds
+            }
+        })
+        
+        return recipe
+    
+    def visualize_device_3d(self, device: DeviceGeometry, save_path: Optional[str] = None):
+        """Create 3D visualization of device geometry."""
+        fig = plt.figure(figsize=(12, 10))
+        ax = fig.add_subplot(111, projection='3d')
+        
+        # Color map for different materials
+        material_colors = {
+            'SiO2': 'lightblue',
+            'TaAs': 'red',
+            'NbAs': 'orange', 
+            'Au': 'gold',
+            'default': 'gray'
+        }
+        
+        # Plot layers
+        for layer in device.layers:
+            color = material_colors.get(layer.material, material_colors['default'])
+            
+            # Create layer as a box
+            x_size, y_size, _ = device.total_size
+            z_bottom = layer.position_z / 1000  # Convert to μm
+            z_top = z_bottom + layer.thickness / 1000
+            
+            # Define box vertices
+            vertices = np.array([
+                [0, 0, z_bottom], [x_size, 0, z_bottom],
+                [x_size, y_size, z_bottom], [0, y_size, z_bottom],
+                [0, 0, z_top], [x_size, 0, z_top],
+                [x_size, y_size, z_top], [0, y_size, z_top]
+            ])
+            
+            # Plot box faces
+            from mpl_toolkits.mplot3d.art3d import Poly3DCollection
+            
+            faces = [
+                [vertices[0], vertices[1], vertices[5], vertices[4]],  # Front
+                [vertices[2], vertices[3], vertices[7], vertices[6]],  # Back
+                [vertices[1], vertices[2], vertices[6], vertices[5]],  # Right
+                [vertices[4], vertices[7], vertices[3], vertices[0]],  # Left
+                [vertices[0], vertices[1], vertices[2], vertices[3]],  # Bottom
+                [vertices[4], vertices[5], vertices[6], vertices[7]]   # Top
+            ]
+            
+            ax.add_collection3d(Poly3DCollection(faces, alpha=0.7, facecolor=color, 
+                                               edgecolor='black', linewidth=0.5))
+        
+        # Plot contacts
+        for contact in device.contacts:
+            x, y = contact.position
+            w, h = contact.size
+            
+            # Contact as small box on top
+            z_contact = max(layer.position_z + layer.thickness for layer in device.layers) / 1000
+            
+            contact_vertices = np.array([
+                [x, y, z_contact], [x+w, y, z_contact],
+                [x+w, y+h, z_contact], [x, y+h, z_contact],
+                [x, y, z_contact+0.1], [x+w, y, z_contact+0.1],
+                [x+w, y+h, z_contact+0.1], [x, y+h, z_contact+0.1]
+            ])
+            
+            contact_faces = [
+                [contact_vertices[0], contact_vertices[1], contact_vertices[5], contact_vertices[4]],
+                [contact_vertices[2], contact_vertices[3], contact_vertices[7], contact_vertices[6]],
+                [contact_vertices[1], contact_vertices[2], contact_vertices[6], contact_vertices[5]],
+                [contact_vertices[4], contact_vertices[7], contact_vertices[3], contact_vertices[0]],
+                [contact_vertices[0], contact_vertices[1], contact_vertices[2], contact_vertices[3]],
+                [contact_vertices[4], contact_vertices[5], contact_vertices[6], contact_vertices[7]]
+            ]
+            
+            ax.add_collection3d(Poly3DCollection(contact_faces, alpha=0.9, 
+                                               facecolor='silver', edgecolor='black'))
+        
+        # Set labels and limits
+        ax.set_xlabel('X (μm)')
+        ax.set_ylabel('Y (μm)')
+        ax.set_zlabel('Z (μm)')
+        
+        ax.set_xlim(0, device.total_size[0])
+        ax.set_ylim(0, device.total_size[1])
+        ax.set_zlim(0, device.total_size[2])
+        
+        ax.set_title(f'Weyltronic Device: {device.name}')
+        
+        # Add legend
+        legend_elements = []
+        for layer in device.layers:
+            color = material_colors.get(layer.material, material_colors['default'])
+            legend_elements.append(plt.Rectangle((0,0),1,1, facecolor=color, 
+                                               label=f'{layer.name} ({layer.material})'))
+        
+        ax.legend(handles=legend_elements, loc='upper left', bbox_to_anchor=(0.02, 0.98))
+        
+        if save_path:
+            plt.savefig(save_path, dpi=150, bbox_inches='tight')
+        
+        plt.show()
+    
+    def export_device_layout(self, device: DeviceGeometry, format: str = 'gds') -> str:
+        """Export device layout in standard CAD format."""
+        if format.lower() == 'gds':
+            return self._export_gds(device)
+        elif format.lower() == 'json':
+            return self._export_json(device)
+        else:
+            raise ValueError(f"Unsupported export format: {format}")
+    
+    def _export_gds(self, device: DeviceGeometry) -> str:
+        """Export to GDSII format (simplified)."""
+        # This would normally use a library like gdspy
+        # Here we provide a text representation
+        gds_content = f"""
+# GDSII Layout for {device.name}
+# Generated by WeyltronicCAD
+
+HEADER 600
+BGNLIB
+LIBNAME {device.name.upper()}
+
+BGNSTR
+STRNAME MAIN
+
+# Layers
+"""
+        
+        for i, layer in enumerate(device.layers):
+            gds_content += f"""
+# Layer {i}: {layer.name} ({layer.material})
+LAYER {i}
+DATATYPE 0
+BOUNDARY
+XY 0 0 {int(device.total_size[0]*1000)} 0 {int(device.total_size[0]*1000)} {int(device.total_size[1]*1000)} 0 {int(device.total_size[1]*1000)} 0 0
+ENDEL
+"""
+        
+        # Contacts
+        for j, contact in enumerate(device.contacts):
+            x, y = contact.position
+            w, h = contact.size
+            gds_content += f"""
+# Contact: {contact.name}
+LAYER {len(device.layers) + j}
+DATATYPE 0
+BOUNDARY
+XY {int(x*1000)} {int(y*1000)} {int((x+w)*1000)} {int(y*1000)} {int((x+w)*1000)} {int((y+h)*1000)} {int(x*1000)} {int((y+h)*1000)} {int(x*1000)} {int(y*1000)}
+ENDEL
+"""
+        
+        gds_content += """
+ENDSTR
+ENDLIB
+"""
+        return gds_content
+    
+    def _export_json(self, device: DeviceGeometry) -> str:
+        """Export device to JSON format."""
+        device_dict = {
+            'name': device.name,
+            'total_size': device.total_size,
+            'layers': [
+                {
+                    'name': layer.name,
+                    'material': layer.material,
+                    'thickness': layer.thickness,
+                    'position_z': layer.position_z,
+                    'properties': layer.properties
+                } for layer in device.layers
+            ],
+            'contacts': [
+                {
+                    'name': contact.name,
+                    'position': contact.position,
+                    'size': contact.size,
+                    'material': contact.material
+                } for contact in device.contacts
+            ],
+            'active_region': device.active_region
+        }
+        
+        return json.dumps(device_dict, indent=2)
+
+# Example usage functions
+def create_weyltronic_hall_bar_design():
+    """Create example Hall bar design."""
+    cad = WeyltronicCAD()
+    
+    # Create Hall bar device
+    device = cad.create_device_template('weyl_hall_bar', 'hall_bar')
+    
+    # Optimize for specific targets
+    target_specs = {
+        'resistance': 1000.0,  # Ohms
+        'capacitance': 1e-12   # F
+    }
+    
+    optimized_device = cad.optimize_device_geometry(device, target_specs)
+    
+    # Validate design
+    validation = cad.validate_design_rules(optimized_device)
+    
+    # Generate fabrication recipe
+    recipe = cad.generate_fabrication_recipe(optimized_device)
+    
+    return {
+        'device': optimized_device,
+        'validation': validation,
+        'fabrication_recipe': recipe,
+        'cad_system': cad
+    }
+EOF
+
+# Create fabrication planning module
+cat > src/biocomputing/weyltronics/classical_design/fabrication/fab_planner.py << 'EOF'
+"""
+Fabrication planning and process optimization for Weyltronic devices.
+
+Classical computational tools for planning fabrication sequences,
+optimizing process parameters, and ensuring manufacturability.
+"""
+
+import numpy as np
+from typing import Dict, List, Tuple, Optional
+from dataclasses import dataclass
+from enum import Enum
+import matplotlib.pyplot as plt
+import json
+
+class ProcessType(Enum):
+    DEPOSITION = "deposition"
+    ETCHING = "etching"
+    LITHOGRAPHY = "lithography"
+    ANNEALING = "annealing"
+    CLEANING = "cleaning"
+    INSPECTION = "inspection"
+
+@dataclass
+class ProcessStep:
+    """Individual fabrication process step."""
+    name: str
+    process_type: ProcessType
+    material: str
+    parameters: Dict[str, float]
+    duration: float  # seconds
+    temperature: float  # Kelvin
+    equipment: str
+    yield_risk: float  # 0-1 scale
+
+@dataclass
+class FabricationConstraints:
+    """Fabrication constraints and limits."""
+    max_temperature: float = 1200.0  # K
+    max_processing_time: float = 86400.0  # seconds (24 hours)
+    available_materials: List[str] = None
+    equipment_availability: Dict[str, float] = None
+    contamination_tolerance: float = 1e-9  # fraction
+
+class FabricationPlanner:
+    """
+    Classical fabrication planning system.
+    
+    Optimizes fabrication sequences for Weyltronic devices using
+    conventional process engineering principles.
+    """
+    
+    def __init__(self):
+        self.process_library = self._initialize_process_library()
+        self.equipment_specs = self._initialize_equipment_specs()
+        self.material_compatibility = self._initialize_material_compatibility()
+        
+    def _initialize_process_library(self) -> Dict[str, ProcessStep]:
+        """Initialize library of available fabrication processes."""
+        return {
+            'substrate_clean': ProcessStep(
+                name='Substrate cleaning',
+                process_type=ProcessType.CLEANING,
+                material='SiO2',
+                parameters={'temperature': 400.0, 'pressure': 1e-6},
+                duration=1800.0,  # 30 minutes
+                temperature=400.0,
+                equipment='RCA_cleaner',
+                yield_risk=0.05
+            ),
+            'weyl_deposition_mbe': ProcessStep(
+                name='Weyl semimetal MBE deposition',
+                process_type=ProcessType.DEPOSITION,
+                material='TaAs',
+                parameters={'rate': 0.1, 'temperature': 800.0, 'pressure': 1e-10},
+                duration=3000.0,  # 50 minutes for 50nm
+                temperature=800.0,
+                equipment='MBE_system',
+                yield_risk=0.15
+            ),
+            'weyl_deposition_sputtering': ProcessStep(
+                name='Weyl semimetal sputtering',
+                process_type=ProcessType.DEPOSITION,
+                material='TaAs',
+                parameters={'power': 100.0, 'pressure': 1e-3, 'ar_flow': 20.0},
+                duration=1800.0,  # 30 minutes
+                temperature=500.0,
+                equipment='sputter_system',
+                yield_risk=0.10
+            ),
+            'oxide_deposition': ProcessStep(
+                name='Oxide deposition',
+                process_type=ProcessType.DEPOSITION,
+                material='SiO2',
+                parameters={'rate': 0.05, 'temperature': 400.0},
+                duration=1200.0,  # 20 minutes for 10nm
+                temperature=400.0,
+                equipment='PECVD_system',
+                yield_risk=0.08
+            ),
+            'metal_deposition': ProcessStep(
+                name='Metal contact deposition', 
+                process_type=ProcessType.DEPOSITION,
+                material='Au',
+                parameters={'rate': 0.2, 'temperature': 300.0},
+                duration=500.0,  # 8 minutes for 100nm
+                temperature=300.0,
+                equipment='evaporator',
+                yield_risk=0.05
+            ),
+            'photolithography': ProcessStep(
+                name='Photolithography patterning',
+                process_type=ProcessType.LITHOGRAPHY,
+                material='photoresist',
+                parameters={'exposure_dose': 100.0, 'development_time': 60.0},
+                duration=3600.0,  # 1 hour including all steps
+                temperature=350.0,
+                equipment='stepper',
+                yield_risk=0.12
+            ),
+            'reactive_ion_etch': ProcessStep(
+                name='Reactive ion etching',
+                process_type=ProcessType.ETCHING,
+                material='various',
+                parameters={'power': 150.0, 'pressure': 0.01, 'cf4_flow': 50.0},
+                duration=600.0,  # 10 minutes
+                temperature=320.0,
+                equipment='RIE_system',
+                yield_risk=0.10
+            ),
+            'rapid_thermal_anneal': ProcessStep(
+                name='Rapid thermal annealing',
+                process_type=ProcessType.ANNEALING,
+                material='contacts',
+                parameters={'ramp_rate': 10.0, 'hold_time': 60.0},
+                duration=300.0,  # 5 minutes
+                temperature=500.0,
+                equipment='RTA_furnace',
+                yield_risk=0.08
+            )
+        }
+    
+    def _initialize_equipment_specs(self) -> Dict[str, Dict[str, float]]:
+        """Initialize equipment specifications."""
+        return {
+            'MBE_system': {
+                'max_temperature': 1200.0,
+                'min_pressure': 1e-12,
+                'throughput': 1.0,  # wafers/hour
+                'setup_time': 7200.0,  # 2 hours
+                'cost_per_hour': 500.0
+            },
+            'sputter_system': {
+                'max_temperature': 600.0,
+                'min_pressure': 1e-8,
+                'throughput': 4.0,
+                'setup_time': 1200.0,  # 20 minutes
+                'cost_per_hour': 200.0
+            },
+            'PECVD_system': {
+                'max_temperature': 500.0,
+                'min_pressure': _design_configuration(self, config_name: str, 
                                    target_specs: Dict[str, float]) -> Dict[str, any]:
         """Create a complete design configuration using classical methods."""
         print(f"Creating design configuration: {config_name}")
@@ -727,12 +1468,4 @@ class ClassicalDesignOptimizer:
         
         print(f"Optimization results saved to {filename}")
 
-def create_simulator_factory(params: Dict) -> Callable:
-    """Factory function to create simulator with given parameters."""
-    def factory():
-        return ClassicalWeylSimulator(
-            ClassicalWeylParams(**params),
-            SimulationGrid(nx=50, ny=50, nz=50, k_resolution=30)
-        )
-    return factory  
-    
+def create
